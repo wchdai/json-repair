@@ -11,6 +11,21 @@ import (
 	"unicode"
 )
 
+// UnmarshalRepair
+func UnmarshalRepair(data string, v any) error {
+	err := json.Unmarshal([]byte(data), v)
+	if err == nil {
+		return nil
+	}
+
+	repair, err2 := RepairJSON(data)
+	if err2 != nil {
+		return err //返回Unmarshal error
+	}
+
+	return json.Unmarshal([]byte(repair), v)
+}
+
 // RepairJSON
 //
 //	@Description:
@@ -459,9 +474,9 @@ func (p *JSONParser) parseString() any {
 						checkCommaInObjectValue = false
 					}
 
-					if (slices.Contains(p.marker, "object_key") && bytes.IndexByte([]byte{':', '}'}, nextC) != -1) ||
-						(slices.Contains(p.marker, "object_value") && nextC == '}') ||
-						(slices.Contains(p.marker, "array") && bytes.IndexByte([]byte{']', ','}, nextC) != -1) ||
+					if (contains(p.marker, "object_key") && bytes.IndexByte([]byte{':', '}'}, nextC) != -1) ||
+						(contains(p.marker, "object_value") && nextC == '}') ||
+						(contains(p.marker, "array") && bytes.IndexByte([]byte{']', ','}, nextC) != -1) ||
 						(checkCommaInObjectValue && p.getMarker() == "object_value" && nextC == ',') {
 						break
 					}
@@ -721,4 +736,21 @@ func JSONMarshal(t any) ([]byte, error) {
 	encoder.SetEscapeHTML(false)
 	err := encoder.Encode(t)
 	return buffer.Bytes(), err
+}
+
+
+// contains reports whether v is present in s.
+func contains[S ~[]E, E comparable](s S, v E) bool {
+	return index(s, v) >= 0
+}
+
+// index returns the index of the first occurrence of v in s,
+// or -1 if not present.
+func index[S ~[]E, E comparable](s S, v E) int {
+	for i := range s {
+		if v == s[i] {
+			return i
+		}
+	}
+	return -1
 }
